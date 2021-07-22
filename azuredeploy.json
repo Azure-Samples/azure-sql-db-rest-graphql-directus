@@ -1,0 +1,296 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+
+	"parameters": {
+		"adminUser": {
+			"type": "string",
+			"defaultValue": "admin@example.com"
+		},
+		"adminPassword": {
+			"type": "secureString"
+		},
+		"databaseServerName": {
+			"type": "string",
+			"defaultValue": "[concat('directus-', uniqueString(resourceGroup().id))]",
+			"metadata": {
+				"description": "Name of the Azure SQL Database Server"
+			}
+		},
+		"databaseAdministratorLogin": {
+			"type": "string",
+			"defaultValue": "directus",
+			"metadata": {
+				"description": "Azure SQL Server admin login username"
+			}
+		},
+		"databaseAdministratorLoginPassword": {
+			"type": "secureString",
+			"metadata": {
+				"description": "Azure SQL Server admin login password"
+			}
+		},
+		"serverFarmName": {
+			"type": "string",
+			"defaultValue": "directus-servers",
+			"metadata": {
+				"description": "Name of the Server Farm that will host the App Service instance"
+			}
+		},
+		"siteName": {
+			"type": "string",
+			"defaultValue": "[concat('directus-', uniqueString(resourceGroup().id))]",
+			"metadata": {
+				"description": "The name of the web app that you wish to create."
+			}
+		}
+	},
+	"resources": [
+		{
+			"type": "Microsoft.Sql/servers",
+			"apiVersion": "2021-02-01-preview",
+			"name": "[parameters('databaseServerName')]",
+			"location": "eastus",
+			"kind": "v12.0",
+			"properties": {
+				"administratorLogin": "[parameters('databaseAdministratorLogin')]",
+				"administratorLoginPassword": "[parameters('databaseAdministratorLoginPassword')]",
+				"version": "12.0",
+				"minimalTlsVersion": "1.2",
+				"publicNetworkAccess": "Enabled",
+				"restrictOutboundNetworkAccess": "Disabled"
+			}
+		},
+		{
+			"type": "Microsoft.Sql/servers/databases",
+			"apiVersion": "2021-02-01-preview",
+			"name": "[concat(parameters('databaseServerName'), '/directus')]",
+			"location": "eastus",
+			"dependsOn": [
+				"[resourceId('Microsoft.Sql/servers', parameters('databaseServerName'))]"
+			],
+			"sku": {
+				"name": "GP_S_Gen5",
+				"tier": "GeneralPurpose",
+				"family": "Gen5",
+				"capacity": 1
+			},
+			"kind": "v12.0,user,vcore,serverless",
+			"properties": {
+				"collation": "SQL_Latin1_General_CP1_CI_AS",
+				"maxSizeBytes": 1073741824,
+				"catalogCollation": "SQL_Latin1_General_CP1_CI_AS",
+				"zoneRedundant": false,
+				"readScale": "Disabled",
+				"autoPauseDelay": 60,
+				"requestedBackupStorageRedundancy": "Geo",
+				"minCapacity": 0.5,
+				"isLedgerOn": false
+			}
+		},
+		{
+			"type": "Microsoft.Sql/servers/firewallRules",
+			"apiVersion": "2021-02-01-preview",
+			"name": "[concat(parameters('databaseServerName'), '/All IP')]",
+			"dependsOn": [
+				"[resourceId('Microsoft.Sql/servers', parameters('databaseServerName'))]"
+			],
+			"properties": {
+				"startIpAddress": "0.0.0.0",
+				"endIpAddress": "255.255.255.255"
+			}
+		},
+		//////////////////////////////////////////////////////////////////////////////////////////////
+		{
+			"type": "Microsoft.Web/serverfarms",
+			"apiVersion": "2018-02-01",
+			"name": "[parameters('serverFarmName')]",
+			"location": "East US",
+			"sku": {
+				"name": "B1",
+				"tier": "Basic",
+				"size": "B1",
+				"family": "B",
+				"capacity": 1
+			},
+			"kind": "linux",
+			"properties": {
+				"perSiteScaling": false,
+				"maximumElasticWorkerCount": 1,
+				"isSpot": false,
+				"reserved": true,
+				"isXenon": false,
+				"hyperV": false,
+				"targetWorkerCount": 0,
+				"targetWorkerSizeId": 0
+			}
+		},
+		{
+			"type": "Microsoft.Web/sites",
+			"apiVersion": "2018-11-01",
+			"name": "[parameters('siteName')]",
+			"location": "East US",
+			"dependsOn": [
+				"[resourceId('Microsoft.Web/serverfarms', parameters('serverFarmName'))]"
+			],
+			"kind": "app,linux,container",
+			"properties": {
+				"enabled": true,
+				"hostNameSslStates": [
+					{
+						"name": "[concat(parameters('siteName'), '.azurewebsites.net')]",
+						"sslState": "Disabled",
+						"hostType": "Standard"
+					},
+					{
+						"name": "[concat(parameters('siteName'), '.scm.azurewebsites.net')]",
+						"sslState": "Disabled",
+						"hostType": "Repository"
+					}
+				],
+				"serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('serverFarmName'))]",
+				"reserved": true,
+				"isXenon": false,
+				"hyperV": false,
+				"siteConfig": {
+					"numberOfWorkers": 1,
+					"linuxFxVersion": "DOCKER|directus/directus:latest",
+					"alwaysOn": false,
+					"http20Enabled": false
+				},
+				"scmSiteAlsoStopped": false,
+				"clientAffinityEnabled": false,
+				"clientCertEnabled": false,
+				"hostNamesDisabled": false,
+				"containerSize": 0,
+				"dailyMemoryTimeQuota": 0,
+				"httpsOnly": false,
+				"redundancyMode": "None"
+			}
+		},
+		{
+			"type": "Microsoft.Web/sites/config",
+			"apiVersion": "2018-11-01",
+			"name": "[concat(parameters('siteName'), '/web')]",
+			"location": "East US",
+			"dependsOn": [
+				"[resourceId('Microsoft.Web/sites', parameters('siteName'))]"
+			],
+			"properties": {
+				"appSettings": [
+					{
+						"name": "ADMIN_EMAIL",
+						"value": "[parameters('adminUser')]"
+					},
+					{
+						"name": "ADMIN_PASSWORD",
+						"value": "[parameters('adminPassword')]"
+					},
+					{
+						"name": "DB_CLIENT",
+						"value": "mssql"
+					},
+					{
+						"name": "DB_HOST",
+						"value": "[concat(parameters('databaseServerName'), '.database.windows.net')]"
+					},
+					{
+						"name": "DB_PORT",
+						"value": 1433
+					},
+					{
+						"name": "DB_DATABASE",
+						"value": "directus"
+					},
+					{
+						"name": "DB_USER",
+						"value": "[parameters('databaseAdministratorLogin')]"
+					},
+					{
+						"name": "DB_PASSWORD",
+						"value": "[parameters('databaseAdministratorLoginPassword')]"
+					},
+					{
+						"name": "DB_OPTIONS__ENCRYPT",
+						"value": "true"
+					}
+				],
+				"numberOfWorkers": 1,
+				"defaultDocuments": [
+					"Default.htm",
+					"Default.html",
+					"Default.asp",
+					"index.htm",
+					"index.html",
+					"iisstart.htm",
+					"default.aspx",
+					"index.php",
+					"hostingstart.html"
+				],
+				"netFrameworkVersion": "v4.0",
+				"linuxFxVersion": "DOCKER|directus/directus:latest",
+				"requestTracingEnabled": false,
+				"remoteDebuggingEnabled": false,
+				"remoteDebuggingVersion": "VS2019",
+				"httpLoggingEnabled": false,
+				"logsDirectorySizeLimit": 35,
+				"detailedErrorLoggingEnabled": false,
+				"azureStorageAccounts": {},
+				"scmType": "None",
+				"use32BitWorkerProcess": true,
+				"webSocketsEnabled": false,
+				"alwaysOn": false,
+				"managedPipelineMode": "Integrated",
+				"virtualApplications": [
+					{
+						"virtualPath": "/",
+						"physicalPath": "site\\wwwroot",
+						"preloadEnabled": false
+					}
+				],
+				"loadBalancing": "LeastRequests",
+				"experiments": {
+					"rampUpRules": []
+				},
+				"autoHealEnabled": false,
+				"localMySqlEnabled": false,
+				"ipSecurityRestrictions": [
+					{
+						"ipAddress": "Any",
+						"action": "Allow",
+						"priority": 1,
+						"name": "Allow all",
+						"description": "Allow all access"
+					}
+				],
+				"scmIpSecurityRestrictions": [
+					{
+						"ipAddress": "Any",
+						"action": "Allow",
+						"priority": 1,
+						"name": "Allow all",
+						"description": "Allow all access"
+					}
+				],
+				"scmIpSecurityRestrictionsUseMain": false,
+				"http20Enabled": false,
+				"minTlsVersion": "1.2",
+				"ftpsState": "AllAllowed",
+				"reservedInstanceCount": 0
+			}
+		},
+		{
+			"type": "Microsoft.Web/sites/hostNameBindings",
+			"apiVersion": "2018-11-01",
+			"name": "[concat(parameters('siteName'), '/', parameters('siteName'), '.azurewebsites.net')]",
+			"location": "East US",
+			"dependsOn": [
+				"[resourceId('Microsoft.Web/sites', parameters('siteName'))]"
+			],
+			"properties": {
+				"siteName": "[parameters('siteName')]",
+				"hostNameType": "Verified"
+			}
+		}
+	]
+}
