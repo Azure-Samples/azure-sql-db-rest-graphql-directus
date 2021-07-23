@@ -32,9 +32,23 @@
 		},
 		"serverFarmName": {
 			"type": "string",
-			"defaultValue": "directus-servers",
+			"defaultValue": "directus",
 			"metadata": {
 				"description": "Name of the Server Farm that will host the App Service instance"
+			}
+		},
+		"storageAccountName": {
+			"type": "string",
+			"defaultValue": "[concat('directus', uniqueString(resourceGroup().id))]",
+			"metadata": {
+				"description": "Name of the Storage Account that will host the Storage Container for file uploads"
+			}
+		},
+		"storageContainerName": {
+			"type": "string",
+			"defaultValue": "[concat('directus', uniqueString(resourceGroup().id))]",
+			"metadata": {
+				"description": "Name of the Storage Container that will host the file uploads"
 			}
 		},
 		"siteName": {
@@ -212,6 +226,26 @@
 					{
 						"name": "DB_OPTIONS__ENCRYPT",
 						"value": "true"
+					},
+					{
+						"name": "STORAGE_LOCATIONS",
+						"value": "azure"
+					},
+					{
+						"name": "STORAGE_AZURE_DRIVER",
+						"value": "azure"
+					},
+					{
+						"name": "STORAGE_AZURE_CONTAINER_NAME",
+						"value": "[parameters('storageContainerName')]"
+					},
+					{
+						"name": "STORAGE_AZURE_ACCOUNT_NAME",
+						"value": "[parameters('storageAccountName')]"
+					},
+					{
+						"name": "STORAGE_AZURE_ACCOUNT_KEY",
+						"value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2019-04-01').keys[0].value]"
 					}
 				],
 				"numberOfWorkers": 1,
@@ -231,9 +265,9 @@
 				"requestTracingEnabled": false,
 				"remoteDebuggingEnabled": false,
 				"remoteDebuggingVersion": "VS2019",
-				"httpLoggingEnabled": false,
+				"httpLoggingEnabled": true,
 				"logsDirectorySizeLimit": 35,
-				"detailedErrorLoggingEnabled": false,
+				"detailedErrorLoggingEnabled": true,
 				"azureStorageAccounts": {},
 				"scmType": "None",
 				"use32BitWorkerProcess": true,
@@ -289,6 +323,83 @@
 			"properties": {
 				"siteName": "[parameters('siteName')]",
 				"hostNameType": "Verified"
+			}
+		},
+		{
+			"name": "[parameters('storageAccountName')]",
+			"type": "Microsoft.Storage/storageAccounts",
+			"apiVersion": "2021-02-01",
+			"location": "eastus",
+			"sku": {
+				"name": "Standard_RAGRS",
+				"tier": "Standard"
+			},
+			"kind": "StorageV2",
+			"properties": {
+				"minimumTlsVersion": "TLS1_2",
+				"allowBlobPublicAccess": false,
+				"allowSharedKeyAccess": true,
+				"supportsHttpsTrafficOnly": true,
+				"encryption": {
+					"services": {
+						"file": {
+							"keyType": "Account",
+							"enabled": true
+						},
+						"blob": {
+							"keyType": "Account",
+							"enabled": true
+						}
+					},
+					"keySource": "Microsoft.Storage"
+				},
+				"accessTier": "Hot"
+			}
+		},
+		{
+			"type": "Microsoft.Storage/storageAccounts/blobServices",
+			"apiVersion": "2021-04-01",
+			"name": "[concat(parameters('storageAccountName'), '/default')]",
+			"dependsOn": [
+				"[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+			],
+			"sku": {
+				"name": "Standard_RAGRS",
+				"tier": "Standard"
+			},
+			"properties": {
+				"changeFeed": {
+					"enabled": false
+				},
+				"restorePolicy": {
+					"enabled": false
+				},
+				"containerDeleteRetentionPolicy": {
+					"enabled": true,
+					"days": 7
+				},
+				"cors": {
+					"corsRules": []
+				},
+				"deleteRetentionPolicy": {
+					"enabled": true,
+					"days": 7
+				},
+				"isVersioningEnabled": false
+			}
+		},
+		{
+			"type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+			"apiVersion": "2021-04-01",
+			"name": "[concat(parameters('storageAccountName'), '/default/', parameters('storageContainerName'))]",
+			"dependsOn": [
+				"[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]",
+				"[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+			],
+			"properties": {
+				"defaultEncryptionScope": "$account-encryption-key",
+				"denyEncryptionScopeOverride": false,
+				"publicAccess": "None"
 			}
 		}
 	]
