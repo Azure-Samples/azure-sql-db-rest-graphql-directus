@@ -1,7 +1,6 @@
 {
 	"$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
 	"contentVersion": "1.0.0.0",
-
 	"parameters": {
 		"adminUser": {
 			"type": "string",
@@ -46,7 +45,7 @@
 		},
 		"storageContainerName": {
 			"type": "string",
-			"defaultValue": "[concat('directus', uniqueString(resourceGroup().id))]",
+			"defaultValue": "[concat('directus-', uniqueString(resourceGroup().id))]",
 			"metadata": {
 				"description": "Name of the Storage Container that will host the file uploads"
 			}
@@ -56,6 +55,20 @@
 			"defaultValue": "[concat('directus-', uniqueString(resourceGroup().id))]",
 			"metadata": {
 				"description": "The name of the web app that you wish to create."
+			}
+		},
+		"redisHostName": {
+			"type": "string",
+			"defaultValue": "[concat('directus-', uniqueString(resourceGroup().id))]",
+			"metadata": {
+				"description": "Hostname of your Azure Cache instance"
+			}
+		},
+		"redisName": {
+			"type": "string",
+			"defaultValue": "[concat('directus-', uniqueString(resourceGroup().id))]",
+			"metadata": {
+				"description": "Cache name of your Azure Cache instance"
 			}
 		}
 	},
@@ -246,6 +259,82 @@
 					{
 						"name": "STORAGE_AZURE_ACCOUNT_KEY",
 						"value": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName')), '2019-04-01').keys[0].value]"
+					},
+					{
+						"name": "CACHE_ENABLED",
+						"value": true
+					},
+					{
+						"name": "CACHE_STORE",
+						"value": "redis"
+					},
+					{
+						"name": "CACHE_NAMESPACE",
+						"value": "directus-cache"
+					},
+					{
+						"name": "CACHE_REDIS_HOST",
+						"value": "[concat(parameters('redisHostName'),'.redis.cache.windows.net')]"
+					},
+					{
+						"name": "CACHE_REDIS_TLS__SERVER_NAME",
+						"value": "[concat(parameters('redisHostName'),'.redis.cache.windows.net')]"
+					},
+					{
+						"name": "CACHE_REDIS_PORT",
+						"value": 6380
+					},
+					{
+						"name": "CACHE_REDIS_PASSWORD",
+						"value": "[listKeys(resourceId('Microsoft.Cache/Redis', parameters('redisName')), '2015-08-01').primaryKey]"
+					},
+					{
+						"name": "PUBLIC_URL",
+						"value": "[concat('https://', parameters('siteName'), '.azurewebsites.net')]"
+					},
+					{
+						"name": "RATE_LIMITER_ENABLED",
+						"value": "true"
+					},
+					{
+						"name": "RATE_LIMITER_STORE",
+						"value": "redis"
+					},
+					{
+						"name": "RATE_LIMITER_KEY_PREFIX",
+						"value": "directus-rate-limiter"
+					},
+					{
+						"name": "RATE_LIMITER_REDIS_HOST",
+						"value": "[concat(parameters('redisHostName'),'.redis.cache.windows.net')]"
+					},
+					{
+						"name": "RATE_LIMITER_REDIS_TLS__SERVER_NAME",
+						"value": "[concat(parameters('redisHostName'),'.redis.cache.windows.net')]"
+					},
+					{
+						"name": "RATE_LIMITER_REDIS_PORT",
+						"value": 6380
+					},
+					{
+						"name": "RATE_LIMITER_REDIS_PASSWORD",
+						"value": "[listKeys(resourceId('Microsoft.Cache/Redis', parameters('redisName')), '2015-08-01').primaryKey]"
+					},
+					{
+						"name": "RATE_LIMITER_DURATION",
+						"value": "1"
+					},
+					{
+						"name": "RATE_LIMITER_POINTS",
+						"value": "30"
+					},
+					{
+						"name": "KEY",
+						"value": "[guid(resourceGroup().id)]"
+					},
+					{
+						"name": "SECRET",
+						"value": "[concat(uniqueString(resourceGroup().id), uniqueString(guid(resourceGroup().id)))]"
 					}
 				],
 				"numberOfWorkers": 1,
@@ -400,6 +489,27 @@
 				"defaultEncryptionScope": "$account-encryption-key",
 				"denyEncryptionScopeOverride": false,
 				"publicAccess": "None"
+			}
+		},
+		{
+			"type": "Microsoft.Cache/Redis",
+			"apiVersion": "2020-12-01",
+			"name": "[parameters('redisHostName')]",
+			"location": "East US",
+			"properties": {
+				"sku": {
+					"name": "Standard",
+					"family": "C",
+					"capacity": 1
+				},
+				"enableNonSslPort": false,
+				"publicNetworkAccess": "Enabled",
+				"redisConfiguration": {
+					"maxclients": "1000",
+					"maxmemory-reserved": "50",
+					"maxfragmentationmemory-reserved": "50",
+					"maxmemory-delta": "50"
+				}
 			}
 		}
 	]
