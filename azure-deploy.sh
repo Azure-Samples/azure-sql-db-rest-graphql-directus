@@ -23,11 +23,55 @@ az group create \
     -l $location
 
 echo "Deploying Resources...";
-az deployment group create \
+uid=`az deployment group create \
   --name AzureSQL_Directus \
-  --resource-group $resourceGroup \
+  --resource-group "$resourceGroup" \
   --template-file azuredeploy.json \
   --parameters \
-    location=$location 
+    location="$location" \
+  --query "properties.outputs.uniqueId.value" \
+  --output tsv`
+
+echo "Generated Unique Id: $uid"
+
+echo "Writing client/directus-address.json..."
+file="./client/directus-address.json"
+site="https://directus-${uid}.azurewebsites.net"
+rm -f -- $file
+cat << EOF >> $file
+[
+    "$site"
+]
+EOF
+
+echo "Getting access to created storage account..."
+storage="directus${uid}"
+AZURE_STORAGE_CONNECTION_STRING=`az storage account show-connection-string -g "$resourceGroup" -n "$storage" --query "connectionString" -o tsv`
+
+echo "Creating container..."
+az storage container create \
+    --connection-string "$AZURE_STORAGE_CONNECTION_STRING" \
+    -n '$web'
+
+echo "Uploading files..."
+az storage blob upload-batch \
+    --connection-string "$AZURE_STORAGE_CONNECTION_STRING" \
+    -d '$web' \
+    -s ./client
+
+echo "Enabling static website..."
+az storage blob service-properties update \
+    --connection-string "$AZURE_STORAGE_CONNECTION_STRING" \
+    --account-name $storage \
+    --static-website \
+    --index-document index.html
+
+website=`az storage account show -g dm-directus-4 -n directusyxxjmrwglmr62 --query "primaryEndpoints.web" -o tsv`
+
+echo "Website available at: $website"
+
+echo "Creating Directus 'Todo' collection..."
+
+echo "Creating sample Todo items..."
 
 echo "Done."

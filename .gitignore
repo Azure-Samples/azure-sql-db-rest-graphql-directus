@@ -351,3 +351,7 @@ MigrationBackup/
 
 # Additional files
 .env
+__queuestorage__/
+__azurite*
+directus-address.json
+test.sh

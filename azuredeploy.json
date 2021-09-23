@@ -427,5 +427,11 @@
 				"publicAccess": "None"
 			}
 		}
-	]
+	],
+	"outputs": {
+		"uniqueId": {
+			"type": "string",
+			"value": "[uniqueString(resourceGroup().id)]"
+		}
+	}
 }

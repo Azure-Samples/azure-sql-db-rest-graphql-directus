@@ -74,7 +74,8 @@
 	</footer>
 
 	<script>
-		API = "/api/todo";
+		API = "";
+		API_PATH = "/items/todo";
 		HEADERS = { 'Accept': 'application/json', 'Content-Type': 'application/json' };		
 
 		// visibility filters
@@ -107,13 +108,16 @@
 			// initialize data 
 			// by loading it from REST API
 			created: function() {
+				console.log("Getting API path...");
 				fetch("directus-address.json")
-                .then(res => res.json())
-				.then(res => {
-					fetch(res[0], {headers: HEADERS, method: "GET"})
-				    .then(res => res.json())
-				    .then(res => { this.todos = res == null ? [] : res; })
-				})
+					.then(res => res.json())
+					.then(res => {
+						API = res[0]+API_PATH;
+						console.log(`API: ${API}`)
+						fetch(API, {headers: HEADERS, method: "GET"})
+						.then(res => res.json())
+						.then(res => { this.todos = res == null ? [] : res.data; })
+					})
 			},
 
 			// computed properties
@@ -158,17 +162,17 @@
 							return res.json();
 						}
 					}).then(res => {						
-						this.todos.push(res);
+						this.todos.push(res.data);
 					})
 				},
 
 				completeTodo: function(todo) {
-					fetch(API + `/${todo.id}`, {headers: HEADERS, method: "PUT", body: JSON.stringify({completed: todo.completed})});
+					fetch(API + `/${todo.id}`, {headers: HEADERS, method: "PATCH", body: JSON.stringify({completed: todo.completed})});
 				},
 
 				completeAll: function() {
 					this.todos.forEach(t => {
-						fetch(API + `/${t.id}`, {headers: HEADERS, method: "PUT", body: JSON.stringify({completed: t.completed})});
+						fetch(API + `/${t.id}`, {headers: HEADERS, method: "PATCH", body: JSON.stringify({completed: t.completed})});
 					})
 				},
 
