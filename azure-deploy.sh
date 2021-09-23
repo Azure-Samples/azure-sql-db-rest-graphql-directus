@@ -14,7 +14,7 @@ location=""
 
 # Directus-Specific Configuration
 directusAdminEmail='admin@example.com'
-directusAdminPassword='directu$_PAzzw0rd!'
+directusAdminPassword='directuS_PAzzw0rd!'
 EOF
 	echo "Enviroment file not detected."
 	echo "Please configure values for your environment in the created .env file"
