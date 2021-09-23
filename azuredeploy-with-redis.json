@@ -4,7 +4,7 @@
 	"parameters": {
 		"location": {
 			"type": "string",
-			"defaultValue": "WestUS2"
+			"defaultValue": "WestUS2"			
 		},
 		"adminUser": {
 			"type": "string",
@@ -30,7 +30,7 @@
 		},
 		"databaseAdministratorLoginPassword": {
 			"type": "secureString",
-			"defaultValue": "AzUR3SqL_PAzzw0rd!",
+			"defaultValue": "AzUR3SqL_PAzzw0rd!",			
 			"metadata": {
 				"description": "Azure SQL Server admin login password"
 			}
@@ -61,6 +61,20 @@
 			"defaultValue": "[concat('directus-', uniqueString(resourceGroup().id))]",
 			"metadata": {
 				"description": "The name of the web app that you wish to create."
+			}
+		},
+		"redisHostName": {
+			"type": "string",
+			"defaultValue": "[concat('directus-', uniqueString(resourceGroup().id))]",
+			"metadata": {
+				"description": "Hostname of your Azure Cache instance"
+			}
+		},
+		"redisName": {
+			"type": "string",
+			"defaultValue": "[concat('directus-', uniqueString(resourceGroup().id))]",
+			"metadata": {
+				"description": "Cache name of your Azure Cache instance"
 			}
 		}
 	},
@@ -254,7 +268,31 @@
 					},
 					{
 						"name": "CACHE_ENABLED",
-						"value": false
+						"value": true
+					},
+					{
+						"name": "CACHE_STORE",
+						"value": "redis"
+					},
+					{
+						"name": "CACHE_NAMESPACE",
+						"value": "directus-cache"
+					},
+					{
+						"name": "CACHE_REDIS_HOST",
+						"value": "[concat(parameters('redisHostName'),'.redis.cache.windows.net')]"
+					},
+					{
+						"name": "CACHE_REDIS_TLS__SERVER_NAME",
+						"value": "[concat(parameters('redisHostName'),'.redis.cache.windows.net')]"
+					},
+					{
+						"name": "CACHE_REDIS_PORT",
+						"value": 6380
+					},
+					{
+						"name": "CACHE_REDIS_PASSWORD",
+						"value": "[listKeys(resourceId('Microsoft.Cache/Redis', parameters('redisName')), '2015-08-01').primaryKey]"
 					},
 					{
 						"name": "PUBLIC_URL",
@@ -262,7 +300,39 @@
 					},
 					{
 						"name": "RATE_LIMITER_ENABLED",
-						"value": false
+						"value": "true"
+					},
+					{
+						"name": "RATE_LIMITER_STORE",
+						"value": "redis"
+					},
+					{
+						"name": "RATE_LIMITER_KEY_PREFIX",
+						"value": "directus-rate-limiter"
+					},
+					{
+						"name": "RATE_LIMITER_REDIS_HOST",
+						"value": "[concat(parameters('redisHostName'),'.redis.cache.windows.net')]"
+					},
+					{
+						"name": "RATE_LIMITER_REDIS_TLS__SERVER_NAME",
+						"value": "[concat(parameters('redisHostName'),'.redis.cache.windows.net')]"
+					},
+					{
+						"name": "RATE_LIMITER_REDIS_PORT",
+						"value": 6380
+					},
+					{
+						"name": "RATE_LIMITER_REDIS_PASSWORD",
+						"value": "[listKeys(resourceId('Microsoft.Cache/Redis', parameters('redisName')), '2015-08-01').primaryKey]"
+					},
+					{
+						"name": "RATE_LIMITER_DURATION",
+						"value": "1"
+					},
+					{
+						"name": "RATE_LIMITER_POINTS",
+						"value": "30"
 					},
 					{
 						"name": "KEY",
@@ -425,6 +495,27 @@
 				"defaultEncryptionScope": "$account-encryption-key",
 				"denyEncryptionScopeOverride": false,
 				"publicAccess": "None"
+			}
+		},
+		{
+			"type": "Microsoft.Cache/Redis",
+			"apiVersion": "2020-12-01",
+			"name": "[parameters('redisHostName')]",
+			"location": "[parameters('location')]",
+			"properties": {
+				"sku": {
+					"name": "Standard",
+					"family": "C",
+					"capacity": 1
+				},
+				"enableNonSslPort": false,
+				"publicNetworkAccess": "Enabled",
+				"redisConfiguration": {
+					"maxclients": "1000",
+					"maxmemory-reserved": "50",
+					"maxfragmentationmemory-reserved": "50",
+					"maxmemory-delta": "50"
+				}
 			}
 		}
 	]
