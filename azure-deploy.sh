@@ -80,7 +80,7 @@ echo "Website available at: $website"
 echo "Waiting for Directus to be fully deployed..."
 curl -s -X POST "$site/auth/login" > /dev/null 2>&1
 
-echo "Logging in into Directus..."
+echo "Deploying (will take just a bit...) and Logging in into Directus..."
 payload="{\"email\":\"$directusAdminEmail\", \"password\":\"$directusAdminPassword\"}"
 result=`curl -s -X POST "$site/auth/login" -H "Content-Type: application/json" -d "$payload"`
 token=`echo $result | jq -r .data.access_token`
