@@ -78,7 +78,7 @@ website=`az storage account show -g $resourceGroup -n $storage --query "primaryE
 echo "Website available at: $website"
 
 echo "Waiting for Directus to be fully deployed..."
-sleep 30
+curl -s -X POST "$site/auth/login" > /dev/null 2>&1
 
 echo "Logging in into Directus..."
 payload="{\"email\":\"$directusAdminEmail\", \"password\":\"$directusAdminPassword\"}"
