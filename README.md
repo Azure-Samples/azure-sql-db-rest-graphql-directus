@@ -1,6 +1,6 @@
 # Directus
 
-![Deploy to Azure](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure-Samples%2Fazure-sql-db-rest-graphql-directus%2F6c44166e41d5f71b38e1e619dc896d2fadfab708%2Fazuredeploy.json%3Ftoken%3DACFXWGMZES3TLF5AYE2ZBZDBARDIG)
+![Deploy to Azure](https://aka.ms/deploytoazurebutton)
 
 Deploy Directus to a production-ready environment on Azure.
 
