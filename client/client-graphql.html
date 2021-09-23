@@ -74,7 +74,8 @@
 	</footer>
 
 	<script>
-		API = "/api/todo/graphql";
+		API = "";
+		API_PATH = "/graphql";
 		HEADERS = { 'Accept': 'application/json', 'Content-Type': 'application/json' };		
 
 		// visibility filters
@@ -105,15 +106,18 @@
 			},
 
 			// initialize data 
-			// by loading it from REST API
+			// by loading it from GraphQL Endpoint
 			created: function() {
-				fetch(API, {headers: HEADERS, method: "POST", body: JSON.stringify({query:"query { todoList { id, title, completed } }"})})
-				.then(res => {
-					return res.json();
-				})
-				.then(res => {				
-					this.todos = res == null ? [] : res.data.todoList;
-				})
+				console.log("Getting API path...");
+				fetch("directus-address.json")
+					.then(res => res.json())
+					.then(res => {
+						API = res[0]+API_PATH;
+						console.log(`API: ${API}`)
+						fetch(API, {headers: HEADERS, method: "POST", body: JSON.stringify({query:"query { todo { id, title, completed } }"})})
+						.then(res => res.json())
+						.then(res => { this.todos = res == null ? [] : res.data.todo; })
+					})
 			},
 
 			// computed properties
@@ -151,30 +155,30 @@
 					if (!value) {
 						return;
 					}
-					fetch(API, {headers: HEADERS, method: "POST", body: JSON.stringify({query:`mutation { addTodo(title: "${value}") {id, title, completed } }`})})
+					fetch(API, {headers: HEADERS, method: "POST", body: JSON.stringify({query:`mutation { create_todo_item(data: {title: "${value}"}) {id, title, completed } }`})})
 					.then(res => {					
 						if (res.ok) {												
 							this.newTodo = ''
 							return res.json();
 						}
 					}).then(res => {						
-						this.todos.push(res.data.addTodo);
+						this.todos.push(res.data.create_todo_item);
 					})
 				},
 
 				completeTodo: function(todo) {
-					fetch(API, {headers: HEADERS, method: "POST", body: JSON.stringify({query:`mutation { updateTodo(id: ${todo.id}, completed: ${todo.completed}) { id } }`})});
+					fetch(API, {headers: HEADERS, method: "POST", body: JSON.stringify({query:`mutation { update_todo_item(id: ${todo.id}, data: {completed: ${todo.completed}}) { id } }`})});
 				},
 
 				completeAll: function() {
 					this.todos.forEach(t => {
-						fetch(API, {headers: HEADERS, method: "POST", body: JSON.stringify({query:`mutation { updateTodo(id: ${t.id}, completed: ${t.completed}) { id } }`})});
+						fetch(API, {headers: HEADERS, method: "POST", body: JSON.stringify({query:`mutation { update_todo_item(id: ${t.id}, data: {completed: ${t.completed}}) { id } }`})});
 					})
 				},
 
 				removeTodo: function (todo) {					
 					var id = todo.id;
-					fetch(API, {headers: HEADERS, method: "POST", body: JSON.stringify({query:`mutation { deleteTodo(id: ${id}) { id } }`})})
+					fetch(API, {headers: HEADERS, method: "POST", body: JSON.stringify({query:`mutation { delete_todo_item(id: ${id}) { id } }`})})
 					.then(res => {
 						if (res.ok) {
 							var index = this.todos.indexOf(todo);
@@ -197,7 +201,7 @@
 					if (!todo.title) {
 						this.removeTodo(todo);
 					} else {
-						fetch(API, {headers: HEADERS, method: "POST", body: JSON.stringify({query:`mutation { updateTodo(id: ${todo.id}, title: "${todo.title}" ) { id } }`})});						
+						fetch(API, {headers: HEADERS, method: "POST", body: JSON.stringify({query:`mutation { update_todo_item(id: ${todo.id}, data: {title: "${todo.title}"} ) { id } }`})});						
 					}
 				},
 
