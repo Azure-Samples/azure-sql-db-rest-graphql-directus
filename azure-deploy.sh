@@ -8,8 +8,13 @@ if [[ -f $FILE ]]; then
     export $(egrep "^[^#;]" $FILE | xargs -n1)
 else
 	cat << EOF > .env
+# Azure-Specific Configuration
 resourceGroup=""
 location=""
+
+# Directus-Specific Configuration
+directusAdminEmail='admin@example.com'
+directusAdminPassword='directu$_PAzzw0rd!'
 EOF
 	echo "Enviroment file not detected."
 	echo "Please configure values for your environment in the created .env file"
@@ -29,6 +34,8 @@ uid=`az deployment group create \
   --template-file azuredeploy.json \
   --parameters \
     location="$location" \
+    adminUser="$directusAdminEmail" \
+    adminPassword="$directusAdminPassword" \
   --query "properties.outputs.uniqueId.value" \
   --output tsv`
 
@@ -66,17 +73,59 @@ az storage blob service-properties update \
     --static-website \
     --index-document index.html
 
-website=`az storage account show -g dm-directus-4 -n directusyxxjmrwglmr62 --query "primaryEndpoints.web" -o tsv`
-
+echo "Getting static website address..."
+website=`az storage account show -g $resourceGroup -n $storage --query "primaryEndpoints.web" -o tsv`
 echo "Website available at: $website"
 
-echo "Loggin in into Directus..."
-curl -X POST https://directus-yxxjmrwglmr62.azurewebsites.net/auth/login \
-    -H "Content-Type: application/json" \
-    -d '{"email":"", "password":""}'
+echo "Waiting for Directus to be fully deployed..."
+sleep 30
 
-echo "Creating Directus 'Todo' collection..."
+echo "Logging in into Directus..."
+payload="{\"email\":\"$directusAdminEmail\", \"password\":\"$directusAdminPassword\"}"
+result=`curl -s -X POST "$site/auth/login" -H "Content-Type: application/json" -d "$payload"`
+token=`echo $result | jq -r .data.access_token`
+
+echo "Creating Todo collection..."
+curl -s -X POST "$site/collections" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $token" \
+    -d '{"collection":"todo"}'
+
+echo "Creating Todo fields..."
+curl -s -X POST "$site/fields/todo" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $token" \
+    -d '{"field":"title", "type":"string", "meta":{"collection":"todo"}}'
+curl -s -X POST "$site/fields/todo" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $token" \
+    -d '{"field":"completed", "type":"boolean", "meta":{"collection":"todo"}}'
+
+echo "Setting permissions on Todo collection..."
+curl -s -X POST "$site/permissions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $token" \
+    -d '{"collection":"todo", "action":"create", "fields":"*"}'
+curl -s -X POST "$site/permissions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $token" \
+    -d '{"collection":"todo", "action":"read", "fields":"*"}'
+curl -s -X POST "$site/permissions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $token" \
+    -d '{"collection":"todo", "action":"update", "fields":"*"}'
+curl -s -X POST "$site/permissions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $token" \
+    -d '{"collection":"todo", "action":"delete", "fields":"*"}'
 
 echo "Creating sample Todo items..."
+curl -s -X POST "$site/items/todo" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $token" \
+    -d '[{"title": "Hello world item", "completed": true},{"title": "Another item", "completed": false},{"title": "Last one"}]'
 
 echo "Done."
+
+echo "Directus available at: $site"
+echo "Sample static website at: $website"

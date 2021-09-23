@@ -7,12 +7,10 @@
 			"defaultValue": "WestUS2"
 		},
 		"adminUser": {
-			"type": "string",
-			"defaultValue": "admin@example.com"
+			"type": "string"
 		},
 		"adminPassword": {
-			"type": "secureString",
-			"defaultValue": "directu$_PAzzw0rd!"
+			"type": "secureString"			
 		},
 		"databaseServerName": {
 			"type": "string",
