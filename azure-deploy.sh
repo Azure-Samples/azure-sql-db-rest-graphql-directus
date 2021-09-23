@@ -70,6 +70,11 @@ website=`az storage account show -g dm-directus-4 -n directusyxxjmrwglmr62 --que
 
 echo "Website available at: $website"
 
+echo "Loggin in into Directus..."
+curl -X POST https://directus-yxxjmrwglmr62.azurewebsites.net/auth/login \
+    -H "Content-Type: application/json" \
+    -d '{"email":"", "password":""}'
+
 echo "Creating Directus 'Todo' collection..."
 
 echo "Creating sample Todo items..."
