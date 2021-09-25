@@ -27,10 +27,9 @@ Serverless Full Stack implementation on Azure of [TodoMVC](http://todomvc.com/) 
 
 This sample is a variation of the Full-Stack MVC Todo sample described here: [TodoMVC Full Stack with Azure Static Web Apps, Node and Azure SQL](https://devblogs.microsoft.com/azure-sql/todomvc-full-stack-with-azure-static-web-apps-node-and-azure-sql/). The difference, of course, is the use of Directus to **automatically expose the ToDo table via REST and GraphQL endpoints**.
 
-Yes, that is right. You don't have to write a single line of code to make sure your table is reachable and usable via REST or GraphQL calls. You just have to configure what you want and all the plumbing will be done automatically for you. Just like magic.
+Yes, that's right. You don't have to write a single line of code to make sure your table is reachable and usable via REST or GraphQL calls. You just have to configure what you want and all the plumbing will be done automatically for you. This way you can focus on creating amazing solution while still having all the power and the feature of Azure SQL at your service. Just like magic!
 
 ![Architecture](./assets/architecture.png)
-
 ## Azure Web Apps, Azure SQL
 
 The implementation uses
