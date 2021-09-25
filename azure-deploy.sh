@@ -34,8 +34,8 @@ uid=`az deployment group create \
   --template-file azuredeploy.json \
   --parameters \
     location="$location" \
-    adminUser="$directusAdminEmail" \
-    adminPassword="$directusAdminPassword" \
+    directusAdministratorEmail="$directusAdminEmail" \
+    directusAdministratorPassword="$directusAdminPassword" \
   --query "properties.outputs.uniqueId.value" \
   --output tsv`
 
@@ -77,10 +77,11 @@ echo "Getting static website address..."
 website=`az storage account show -g $resourceGroup -n $storage --query "primaryEndpoints.web" -o tsv`
 echo "Website available at: $website"
 
-echo "Waiting for Directus to be fully deployed..."
-curl -s -X POST "$site/auth/login" > /dev/null 2>&1
+echo "Waiting for Directus to be fully deployed (it might take a minute)..."
+sleep 5
+curl -s -X POST "$site/auth/login" -H "Content-Type: application/json" -d "{}" > /dev/null 2>&1
 
-echo "Deploying (will take just a bit...) and Logging in into Directus..."
+echo "Logging in into Directus..."
 payload="{\"email\":\"$directusAdminEmail\", \"password\":\"$directusAdminPassword\"}"
 result=`curl -s -X POST "$site/auth/login" -H "Content-Type: application/json" -d "$payload"`
 token=`echo $result | jq -r .data.access_token`

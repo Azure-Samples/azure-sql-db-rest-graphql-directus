@@ -6,31 +6,39 @@
 			"type": "string",
 			"defaultValue": "WestUS2"			
 		},
-		"adminUser": {
-			"type": "string"
-		},
-		"adminPassword": {
-			"type": "secureString"
-		},
-		"databaseServerName": {
+		"databaseServer": {
 			"type": "string",
 			"defaultValue": "[concat('directus-', uniqueString(resourceGroup().id))]",
 			"metadata": {
-				"description": "Name of the Azure SQL Database Server"
+				"description": "Azure SQL Database Server"
 			}
 		},
 		"databaseAdministratorLogin": {
 			"type": "string",
 			"defaultValue": "directus",
 			"metadata": {
-				"description": "Azure SQL Server admin login username"
+				"description": "Azure SQL Database admin user name"
 			}
 		},
 		"databaseAdministratorLoginPassword": {
 			"type": "secureString",
+			"defaultValue": "AzUR3SqL_PAzzw0rd!",
+			"metadata": {
+				"description": "Azure SQL Database admin password"
+			}
+		},		
+		"directusAdministratorEmail": {
+			"type": "string",
+			"defaultValue": "directus",
+			"metadata": {
+				"description": "Directus administrative account email"
+			}
+		},
+		"directusAdministratorPassword": {
+			"type": "secureString",
 			"defaultValue": "AzUR3SqL_PAzzw0rd!",			
 			"metadata": {
-				"description": "Azure SQL Server admin login password"
+				"description": "Directus administrative account password"
 			}
 		},
 		"serverFarmName": {
@@ -80,7 +88,7 @@
 		{
 			"type": "Microsoft.Sql/servers",
 			"apiVersion": "2021-02-01-preview",
-			"name": "[parameters('databaseServerName')]",
+			"name": "[parameters('databaseServer')]",
 			"location": "[parameters('location')]",
 			"kind": "v12.0",
 			"properties": {
@@ -95,10 +103,10 @@
 		{
 			"type": "Microsoft.Sql/servers/databases",
 			"apiVersion": "2021-02-01-preview",
-			"name": "[concat(parameters('databaseServerName'), '/directus')]",
+			"name": "[concat(parameters('databaseServer'), '/directus')]",
 			"location": "[parameters('location')]",
 			"dependsOn": [
-				"[resourceId('Microsoft.Sql/servers', parameters('databaseServerName'))]"
+				"[resourceId('Microsoft.Sql/servers', parameters('databaseServer'))]"
 			],
 			"sku": {
 				"name": "GP_S_Gen5",
@@ -122,9 +130,9 @@
 		{
 			"type": "Microsoft.Sql/servers/firewallRules",
 			"apiVersion": "2021-02-01-preview",
-			"name": "[concat(parameters('databaseServerName'), '/AllowAllWindowsAzureIps')]",
+			"name": "[concat(parameters('databaseServer'), '/AllowAllWindowsAzureIps')]",
 			"dependsOn": [
-				"[resourceId('Microsoft.Sql/servers', parameters('databaseServerName'))]"
+				"[resourceId('Microsoft.Sql/servers', parameters('databaseServer'))]"
 			],
 			"properties": {
 				"startIpAddress": "0.0.0.0",
@@ -210,11 +218,11 @@
 				"appSettings": [
 					{
 						"name": "ADMIN_EMAIL",
-						"value": "[parameters('adminUser')]"
+						"value": "[parameters('directusAdministratorEmail')]"
 					},
 					{
 						"name": "ADMIN_PASSWORD",
-						"value": "[parameters('adminPassword')]"
+						"value": "[parameters('directusAdministratorPassword')]"
 					},
 					{
 						"name": "DB_CLIENT",
@@ -222,7 +230,7 @@
 					},
 					{
 						"name": "DB_HOST",
-						"value": "[concat(parameters('databaseServerName'), '.database.windows.net')]"
+						"value": "[concat(parameters('databaseServer'), '.database.windows.net')]"
 					},
 					{
 						"name": "DB_PORT",
