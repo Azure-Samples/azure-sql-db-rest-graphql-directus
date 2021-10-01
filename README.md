@@ -191,7 +191,7 @@ A sample of GraphQL endpoint usage in a web page is available at `/client-graphq
 
 You can deploy only Directus (without the additional sample website) by using the "Deploy to Azure" button:
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https%3A%2F%2Fraw.githubusercontent.com%2FAzure-Samples%2Fazure-sql-db-rest-graphql-directus%2Fmain%2Fazuredeploy.json)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FAzure-Samples%2Fazure-sql-db-rest-graphql-directus%2Fmain%2Fazuredeploy.json)
 
 ## Advanced configuration
 
