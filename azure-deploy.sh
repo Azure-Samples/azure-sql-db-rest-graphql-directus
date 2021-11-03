@@ -78,7 +78,8 @@ website=`az storage account show -g $resourceGroup -n $storage --query "primaryE
 echo "Website available at: $website"
 
 echo "Waiting for Directus to be fully deployed (it might take a minute)..."
-sleep 5
+curl -s -X POST "$site/auth/login" -H "Content-Type: application/json" -d "{}" > /dev/null 2>&1
+sleep 30
 curl -s -X POST "$site/auth/login" -H "Content-Type: application/json" -d "{}" > /dev/null 2>&1
 
 echo "Logging in into Directus..."
@@ -90,35 +91,25 @@ echo "Creating Todo collection..."
 curl -s -X POST "$site/collections" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $token" \
-    -d '{"collection":"todo"}'
-
-echo "Creating Todo fields..."
-curl -s -X POST "$site/fields/todo" \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer $token" \
-    -d '{"field":"title", "type":"string", "meta":{"collection":"todo"}}'
-curl -s -X POST "$site/fields/todo" \
-    -H "Content-Type: application/json" \
-    -H "Authorization: Bearer $token" \
-    -d '{"field":"completed", "type":"boolean", "meta":{"collection":"todo"}}'
+    -d '{"collection": "todo", "fields": [ { "field": "id", "type": "integer", "schema": { "is_primary_key": true, "has_auto_increment": true } }, { "field": "title", "type": "string" }, { "field": "completed", "type": "boolean" } ], "schema": {}, "meta": { "singleton": false } }'
 
 echo "Setting permissions on Todo collection..."
 curl -s -X POST "$site/permissions" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $token" \
-    -d '{"collection":"todo", "action":"create", "fields":"*"}'
+    -d '{"role":null, "collection":"todo", "action":"create", "fields":"*", "permissions":{}, "validation":{}}'    
 curl -s -X POST "$site/permissions" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $token" \
-    -d '{"collection":"todo", "action":"read", "fields":"*"}'
+    -d '{"role":null, "collection":"todo", "action":"read", "fields":"*", "permissions":{}, "validation":{}}'    
 curl -s -X POST "$site/permissions" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $token" \
-    -d '{"collection":"todo", "action":"update", "fields":"*"}'
+    -d '{"role":null, "collection":"todo", "action":"update", "fields":"*", "permissions":{}, "validation":{}}'    
 curl -s -X POST "$site/permissions" \
     -H "Content-Type: application/json" \
     -H "Authorization: Bearer $token" \
-    -d '{"collection":"todo", "action":"delete", "fields":"*"}'
+    -d '{"role":null, "collection":"todo", "action":"delete", "fields":"*", "permissions":{}, "validation":{}}'        
 
 echo "Creating sample Todo items..."
 curl -s -X POST "$site/items/todo" \

@@ -2,10 +2,6 @@
 	"$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
 	"contentVersion": "1.0.0.0",
 	"parameters": {
-		"directusVersion": {
-			"type": "string",
-			"defaultValue": "latest"
-		},
 		"location": {
 			"type": "string",
 			"defaultValue": "WestUS2"
@@ -180,7 +176,7 @@
 				"hyperV": false,
 				"siteConfig": {
 					"numberOfWorkers": 1,
-					"linuxFxVersion": "[concat('DOCKER|directus/directus:', parameters('directusVersion'))]",
+					"linuxFxVersion": "DOCKER|directus/directus:9.0.0-rc.99",
 					"alwaysOn": false,
 					"http20Enabled": false
 				},
@@ -283,18 +279,9 @@
 				],
 				"numberOfWorkers": 1,
 				"defaultDocuments": [
-					"Default.htm",
-					"Default.html",
-					"Default.asp",
-					"index.htm",
-					"index.html",
-					"iisstart.htm",
-					"default.aspx",
-					"index.php",
-					"hostingstart.html"
+					"index.html"
 				],
 				"netFrameworkVersion": "v4.0",
-				"linuxFxVersion": "[concat('DOCKER|directus/directus:', parameters('directusVersion'))]",
 				"requestTracingEnabled": false,
 				"remoteDebuggingEnabled": false,
 				"remoteDebuggingVersion": "VS2019",
