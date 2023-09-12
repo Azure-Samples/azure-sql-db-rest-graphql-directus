@@ -6,7 +6,7 @@ products:
   - azure
   - vs-code
   - azure-sql-database
-  - azure-web-apps
+  - azure-app-service
 description: 'Full Stack TodoMVC Sample app, with REST and GraphQL support, using Directus, Azure Web Apps, Vue.Js and Azure SQL'
 urlFragment: 'azure-sql-db-rest-graphql-directus'
 ---
